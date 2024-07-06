@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, required this.title}) : super(key: key);
   final String title;
 
   @override
@@ -27,6 +27,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   // Holds the text that user typed.
   String text = '';
+
   // CustomLayoutKeys _customLayoutKeys;
   // True if shift enabled.
   bool shiftEnabled = false;
@@ -34,7 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // is true will show the numeric keyboard.
   bool isNumericMode = false;
 
-  TextEditingController _controllerText;
+  late TextEditingController _controllerText;
 
   @override
   void initState() {
@@ -77,23 +78,24 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
               child: Container(),
             ),
-            Container(
-              color: Colors.deepPurple,
-              child: VirtualKeyboard(
-                  height: 300,
-                  //width: 500,
-                  textColor: Colors.white,
-                  textController: _controllerText,
-                  //customLayoutKeys: _customLayoutKeys,
-                  defaultLayouts: [
-                    VirtualKeyboardDefaultLayouts.Arabic,
-                    VirtualKeyboardDefaultLayouts.English
-                  ],
-                  //reverseLayout :true,
-                  type: isNumericMode
-                      ? VirtualKeyboardType.Numeric
-                      : VirtualKeyboardType.Alphanumeric,
-                  onKeyPress: _onKeyPress),
+            VirtualKeyboard(
+              height: 400,
+              //width: 500,
+              textColor: Colors.white,
+              textController: _controllerText,
+              //customLayoutKeys: _customLayoutKeys,
+              defaultLayouts: [
+                VirtualKeyboardDefaultLayouts.English,
+                VirtualKeyboardDefaultLayouts.Arabic,
+              ],
+              //reverseLayout :true,
+              type: isNumericMode
+                  ? VirtualKeyboardType.Numeric
+                  : VirtualKeyboardType.Alphanumeric,
+              onKeyPress: _onKeyPress,
+              actionKeyColor: Color.fromARGB(255, 224, 225, 249),
+              keyColor: Colors.white,
+              backgroundColor: Color.fromARGB(255, 239, 241, 245),
             )
           ],
         ),
@@ -104,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Fired when the virtual keyboard key is pressed.
   _onKeyPress(VirtualKeyboardKey key) {
     if (key.keyType == VirtualKeyboardKeyType.String) {
-      text = text + (shiftEnabled ? key.capsText : key.text);
+      text = text + (shiftEnabled ? (key.capsText ?? '') : (key.text ?? ''));
     } else if (key.keyType == VirtualKeyboardKeyType.Action) {
       switch (key.action) {
         case VirtualKeyboardKeyAction.Backspace:
@@ -115,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
           text = text + '\n';
           break;
         case VirtualKeyboardKeyAction.Space:
-          text = text + key.text;
+          text = text + (key.text ?? '');
           break;
         case VirtualKeyboardKeyAction.Shift:
           shiftEnabled = !shiftEnabled;

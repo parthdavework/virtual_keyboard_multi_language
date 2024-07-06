@@ -1,7 +1,9 @@
 library virtual_keyboard_multi_language;
 
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:virtual_keyboard_multi_language/src/keyboard_colors.dart';
 
 part './src/key_action.dart';
 part './src/key_type.dart';

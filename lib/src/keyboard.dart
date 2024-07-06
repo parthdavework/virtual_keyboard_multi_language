@@ -6,6 +6,13 @@ const double _virtualKeyboardDefaultHeight = 300;
 
 const int _virtualKeyboardBackspaceEventPerioud = 250;
 
+const EdgeInsetsGeometry _defaultKeyMargin = EdgeInsets.symmetric(
+  horizontal: 6,
+  vertical: 6,
+);
+
+const EdgeInsetsGeometry _defaultKeyboardPadding = EdgeInsets.all(16);
+
 /// Virtual Keyboard widget.
 class VirtualKeyboard extends StatefulWidget {
   /// Keyboard Type: Should be inited in creation time.
@@ -45,21 +52,36 @@ class VirtualKeyboard extends StatefulWidget {
   /// will be ignored if customLayoutKeys is not null
   final List<VirtualKeyboardDefaultLayouts>? defaultLayouts;
 
-  VirtualKeyboard(
-      {Key? key,
-      required this.type,
-      this.onKeyPress,
-      this.builder,
-      this.width,
-      this.defaultLayouts,
-      this.customLayoutKeys,
-      this.textController,
-      this.reverseLayout = false,
-      this.height = _virtualKeyboardDefaultHeight,
-      this.textColor = Colors.black,
-      this.fontSize = 14,
-      this.alwaysCaps = false})
-      : super(key: key);
+  final Color actionKeyColor;
+  final Color keyColor;
+  final Color spaceBarColor;
+  final Color backgroundColor;
+  double keyMaxWidth;
+  final EdgeInsetsGeometry keysMargin;
+  final EdgeInsetsGeometry keyboardPadding;
+
+  VirtualKeyboard({
+    Key? key,
+    required this.type,
+    this.onKeyPress,
+    this.builder,
+    this.width,
+    this.defaultLayouts,
+    this.customLayoutKeys,
+    this.textController,
+    this.reverseLayout = false,
+    this.height = _virtualKeyboardDefaultHeight,
+    this.textColor = Colors.black,
+    this.fontSize = 14,
+    this.alwaysCaps = false,
+    this.actionKeyColor = actionButtonColor,
+    this.keyColor = keyboardKeysColor,
+    this.spaceBarColor = actionSpaceBarButtonColor,
+    this.backgroundColor = keyboardBackgroundColor,
+    this.keyMaxWidth = 0,
+    this.keysMargin = _defaultKeyMargin,
+    this.keyboardPadding = _defaultKeyboardPadding,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -72,6 +94,7 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
   late VirtualKeyboardType type;
   Function? onKeyPress;
   late TextEditingController textController;
+
   // The builder function will be called for each Key object.
   Widget Function(BuildContext context, VirtualKeyboardKey key)? builder;
   late double height;
@@ -81,6 +104,7 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
   late bool alwaysCaps;
   late bool reverseLayout;
   late VirtualKeyboardLayoutKeys customLayoutKeys;
+
   // Text Style for keys.
   late TextStyle textStyle;
 
@@ -175,6 +199,8 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
     return Container(
       height: height,
       width: width ?? MediaQuery.of(context).size.width,
+      color: widget.backgroundColor,
+      padding: widget.keyboardPadding,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -187,12 +213,20 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
     return Container(
       height: height,
       width: width ?? MediaQuery.of(context).size.width,
+      color: widget.backgroundColor,
+      padding: widget.keyboardPadding,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: _rows(),
       ),
     );
+  }
+
+  void calculateMaxKeyWidth(int maxItemsInRow) {
+    widget.keyMaxWidth =
+        (MediaQuery.sizeOf(context).width - widget.keyboardPadding.horizontal) /
+            maxItemsInRow;
   }
 
   /// Returns the rows for keyboard.
@@ -202,6 +236,18 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
         type == VirtualKeyboardType.Numeric
             ? _getKeyboardRowsNumeric()
             : _getKeyboardRows(customLayoutKeys);
+
+    if (widget.keyMaxWidth == 0) {
+      var maxRowKeysCount = 0;
+      keyboardRows.map(
+        (element) => maxRowKeysCount = max(
+          maxRowKeysCount,
+          element.length,
+        ),
+      );
+
+      calculateMaxKeyWidth(maxRowKeysCount);
+    }
 
     // Generate keyboard row.
     List<Widget> rows = List.generate(keyboardRows.length, (int rowNum) {
@@ -259,21 +305,27 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
   /// Creates default UI element for keyboard Key.
   Widget _keyboardDefaultKey(VirtualKeyboardKey key) {
     return Expanded(
-        child: InkWell(
-      onTap: () {
-        _onKeyPress(key);
-      },
-      child: Container(
-        height: height / customLayoutKeys.activeLayout.length,
-        child: Center(
+      child: InkWell(
+        splashColor: Colors.red,
+        onTap: () {
+          _onKeyPress(key);
+        },
+        child: Container(
+          margin: widget.keysMargin,
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          height: height / customLayoutKeys.activeLayout.length,
+          child: Center(
             child: Text(
-          alwaysCaps
-              ? key.capsText ?? ''
-              : (isShiftEnabled ? key.capsText : key.text) ?? '',
-          style: textStyle,
-        )),
+              alwaysCaps
+                  ? key.capsText ?? ''
+                  : (isShiftEnabled ? key.capsText : key.text) ?? '',
+              style: textStyle,
+            ),
+          ),
+          color: widget.keyColor,
+        ),
       ),
-    ));
+    );
   }
 
   /// Creates default UI element for keyboard Action Key.
@@ -313,6 +365,7 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
             ));
         break;
       case VirtualKeyboardKeyAction.Shift:
+        //Add icons like android keyboard
         actionKey = Icon(Icons.arrow_upward, color: textColor);
         break;
       case VirtualKeyboardKeyAction.Space:
@@ -342,6 +395,13 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
         break;
     }
 
+    var keyColor;
+    if (key.action == VirtualKeyboardKeyAction.Space) {
+      keyColor = widget.spaceBarColor;
+    } else {
+      keyColor = widget.keyColor;
+    }
+
     var wdgt = InkWell(
       onTap: () {
         if (key.action == VirtualKeyboardKeyAction.Shift) {
@@ -357,6 +417,7 @@ class _VirtualKeyboardState extends State<VirtualKeyboard> {
       child: Container(
         alignment: Alignment.center,
         height: height / customLayoutKeys.activeLayout.length,
+        color: keyColor,
         child: actionKey,
       ),
     );
